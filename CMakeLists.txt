@@ -10,9 +10,14 @@ add_executable(deviceconnectdisconnect ${SRC_FILES})
 
 if (WIN32)
     target_link_libraries(deviceconnectdisconnect pthread)
+
+    # set macro / replace ftdi by classic usb mem (for test)
+    target_compile_definitions(deviceconnectdisconnect PRIVATE REPLACE_DEVCLASS_USB=1)
 else()
     target_link_libraries(deviceconnectdisconnect udev pthread)
 endif()
+
+
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

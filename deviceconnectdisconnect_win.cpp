@@ -168,7 +168,13 @@ GUID StringToGuid(const std::string &str)
 
 void DeviceConnectDisconnect_win::assign_filter(device_filter filter)
 {
+
     GUID_FTDI_USB = StringToGuid(filter.str1);
+
+#ifdef REPLACE_DEVCLASS_USB
+    GUID_FTDI_USB = GUID_DEVCLASS_USB;
+#endif
+    
 };
 
 void messageReceiver(HWND hWnd)
