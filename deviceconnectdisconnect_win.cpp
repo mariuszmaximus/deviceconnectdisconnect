@@ -13,8 +13,8 @@
 #include "deviceconnectdisconnect_win.h"
 
 CallbackAfterDeviceChange _callback = 0;
-
-GUID GUID_FTDI_USB{0xd1e8fe6a, 0xab75, 0x4d9e, {0x97, 0xd2, 0x06, 0xfa, 0x22, 0xc7, 0x73, 0x6c}};
+// GUID: FTD3XX  
+GUID GUID_HARDWARE{0xd1e8fe6a, 0xab75, 0x4d9e, {0x97, 0xd2, 0x06, 0xfa, 0x22, 0xc7, 0x73, 0x6c}};
 WNDPROC wndProc = NULL;
 HDEVNOTIFY devNotify = NULL;
 WNDCLASSEX WindowClassEx;
@@ -62,7 +62,7 @@ INT_PTR WINAPI WinProcCallback(
     {
     case WM_CREATE:
         if (!DoRegisterDeviceInterfaceToHwnd(
-                GUID_FTDI_USB,
+                GUID_HARDWARE,
                 hWnd,
                 &hDeviceNotify))
         {
@@ -79,13 +79,21 @@ INT_PTR WINAPI WinProcCallback(
         case DBT_DEVICEARRIVAL:
         {
             Beep(523, 500); //
-            printf("Device Connected\n");
+            //printf("Device Connected\n");
+            if(_callback)
+            {
+                _callback(device_event_connect,"Device Connected");
+            }
         }
         break;
         case DBT_DEVICEREMOVECOMPLETE:
         {
             Beep(523, 500); //
-            printf("Device Remove\n");
+            //printf("Device Remove\n");
+            if(_callback)
+            {
+                _callback(device_event_disconnect,"Device DisConnected");
+            }
         }
         break;
         case DBT_DEVNODES_CHANGED:
@@ -126,27 +134,6 @@ BOOL createHiddenWindow(HINSTANCE hInstanceExe)
     return FALSE;
 }
 
-// BOOL createHiddenWindow2(HINSTANCE hInstanceExe)
-// {
-
-//     HINSTANCE histance = hInstanceExe;
-//     ZeroMemory(&WindowClass, sizeof(WNDCLASS));
-//     /*********/
-
-//     WNDPROC  pDefWindowProcW;
-//     pDefWindowProcW = (WNDPROC)GetProcAddress(GetModuleHandle("user32.dll"), "DefWindowProcW");
-
-//     WindowClass.hInstance = reinterpret_cast<HINSTANCE>(GetModuleHandle(0));
-//     WindowClass.lpfnWndProc = pDefWindowProcW;//reinterpret_cast<WNDPROC>(pDefWindowProcW);
-//     WindowClass.hInstance = histance;
-//     WindowClass.lpszClassName = "TPUtilWindow";
-//     /*********/
-//     if (RegisterClass(&WindowClass) != 0)
-//     {
-//         return TRUE;
-//     }
-//     return FALSE;
-// }
 
 void DeviceConnectDisconnect_win::assign_callback(CallbackAfterDeviceChange p_callback)
 {
@@ -169,10 +156,10 @@ GUID StringToGuid(const std::string &str)
 void DeviceConnectDisconnect_win::assign_filter(device_filter filter)
 {
 
-    GUID_FTDI_USB = StringToGuid(filter.str1);
+    GUID_HARDWARE = StringToGuid(filter.str1);
 
 #ifdef REPLACE_DEVCLASS_USB
-    GUID_FTDI_USB = GUID_DEVCLASS_USB;
+    GUID_HARDWARE = GUID_DEVCLASS_USB;
 #endif
     
 };
