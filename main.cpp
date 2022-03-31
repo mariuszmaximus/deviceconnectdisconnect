@@ -15,20 +15,18 @@ int callback_implemenation(device_event event, const char *syspath)
 int main(int, char **)
 {
 #if defined(_WIN32)  
+  // ftdi
   device_filter filter={"{d1e8fe6a-ab75-4d9e-97d2-06fa22c7736c}"};
 #else
   device_filter filter={"usb","usb_interface","403/601f/0"};
 #endif  
 
   DeviceConnectDisconnect::assign_filter(filter);
-  DeviceConnectDisconnect::assign_callback(callback_implemenation);
+  DeviceConnectDisconnect::assign_callback(callback_implemenation,2500);
   DeviceConnectDisconnect::start();
 
-  printf("nacisnij enter\n");
+  printf("Press ENTER\n");
   getchar();
-
   DeviceConnectDisconnect::stop();  // stop thread if exists 
-  printf("nacisnij enter II\n");
-  getchar();
   return 0;
 }
