@@ -1,27 +1,24 @@
-cmake_minimum_required(VERSION 3.0.0)
-project(deviceconnectdisconnect VERSION 0.1.0)
+cmake_minimum_required(VERSION 3.0)
+project(ProjectName)
 
-include(CTest)
-enable_testing()
+set(LIB_NAME deviceconnectdisconnect)
 
 aux_source_directory(. SRC_FILES)
 
-add_executable(deviceconnectdisconnect ${SRC_FILES})
+add_library(${LIB_NAME} STATIC ${SRC_FILES})
+
+target_include_directories(${LIB_NAME} INTERFACE .)
 
 if (WIN32)
-    target_link_libraries(deviceconnectdisconnect pthread)
-
-    # set macro for replace device class
-    # FTDI:        
-    # target_compile_definitions(deviceconnectdisconnect PRIVATE REPLACE_GUID_HARDWARE="{d1e8fe6a-ab75-4d9e-97d2-06fa22c7736c}")
-    # USB_MEMORY:  
-    # target_compile_definitions(deviceconnectdisconnect PRIVATE REPLACE_GUID_HARDWARE="{36fc9e60-c465-11cf-8056-444553540000}")
+    target_link_libraries(${LIB_NAME} pthread ) 
 else()
-    target_link_libraries(deviceconnectdisconnect udev pthread)
+    target_link_libraries(${LIB_NAME} udev pthread )
 endif()
 
 
+target_compile_options(
+        ${LIB_NAME} PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-Wall -O3 -fPIC>
+                    PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,GNU>:-Wall -O3 -fPIC>
+                    PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,MSVC>: /O2>
+)
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)

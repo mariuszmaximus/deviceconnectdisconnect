@@ -57,8 +57,6 @@ INT_PTR WINAPI WinProcCallback(
 {
     LRESULT lRet = 1;
     static HDEVNOTIFY hDeviceNotify;
-    static HWND hEditWnd;
-    static ULONGLONG msgCount = 0;
 
     switch (message)
     {
