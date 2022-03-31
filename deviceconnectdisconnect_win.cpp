@@ -232,7 +232,7 @@ void DeviceConnectDisconnect_win::stop()
 {
     if (hWnd)
     {
-        PostMessage(hWnd, WM_CLOSE, 0, 0);
+        PostMessage(hWnd, WM_QUIT, 0, 0);
     }
     if (_pProcessingThread)
     {
