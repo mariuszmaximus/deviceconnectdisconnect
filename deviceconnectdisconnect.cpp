@@ -7,10 +7,10 @@
 #endif
 
 
-void DeviceConnectDisconnect::assign_callback(CallbackAfterDeviceChange p_callback)
+void DeviceConnectDisconnect::assign_callback(CallbackAfterDeviceChange p_callback, int timer)
 {
 #if defined(_WIN32)
-    DeviceConnectDisconnect_win::assign_callback(p_callback);
+    DeviceConnectDisconnect_win::assign_callback(p_callback, timer);
 #else
     DeviceConnectDisconnect_udev::assign_callback(p_callback);
 #endif

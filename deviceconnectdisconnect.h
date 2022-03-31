@@ -32,7 +32,7 @@ class DeviceConnectDisconnect
     device_filter m_filter{0};
     CallbackAfterDeviceChange _callback{0};
   public:
-    static void assign_callback(CallbackAfterDeviceChange p_callback);
+    static void assign_callback(CallbackAfterDeviceChange p_callback, int timer=0);
     static void assign_filter(device_filter filter);
     static void start();
     static void stop();

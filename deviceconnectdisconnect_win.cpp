@@ -1,6 +1,5 @@
 
 #if defined(_WIN32)
-// KOD WINDOWS
 
 #include <Windows.h>
 #include <devguid.h>
@@ -12,14 +11,17 @@
 #include "deviceconnectdisconnect.h"
 #include "deviceconnectdisconnect_win.h"
 
-CallbackAfterDeviceChange _callback = 0;
-// GUID: FTD3XX  
+CallbackAfterDeviceChange _callback_dcd = 0;
+int _timerTime = 0;
+// GUID: FTD3XX {d1e8fe6a-ab75-4d9e-97d2-06fa22c7736c}
 GUID GUID_HARDWARE{0xd1e8fe6a, 0xab75, 0x4d9e, {0x97, 0xd2, 0x06, 0xfa, 0x22, 0xc7, 0x73, 0x6c}};
 WNDPROC wndProc = NULL;
 HDEVNOTIFY devNotify = NULL;
 WNDCLASSEX WindowClassEx;
 std::thread *_pProcessingThread;
 HWND hWnd = 0;
+
+#define TIMER_ID 1
 
 BOOL DoRegisterDeviceInterfaceToHwnd(
     IN GUID InterfaceClassGuid,
@@ -66,8 +68,7 @@ INT_PTR WINAPI WinProcCallback(
                 hWnd,
                 &hDeviceNotify))
         {
-            // Terminate on failure.
-            // ErrorHandler(TEXT("DoRegisterDeviceInterfaceToHwnd"));
+            printf("DoRegisterDeviceInterfaceToHwnd -> FAIL !\n");
             ExitProcess(1);
         }
         break;
@@ -78,24 +79,33 @@ INT_PTR WINAPI WinProcCallback(
         {
         case DBT_DEVICEARRIVAL:
         {
-            Beep(523, 500); //
-            //printf("Device Connected\n");
-            if(_callback)
+            if(_timerTime ==0)
             {
-                _callback(device_event_connect,"Device Connected");
+                if (_callback_dcd)
+                {
+                    _callback_dcd(device_event_connect, "Device Connected");
+                }
+            }
+            else
+            {
+                SetTimer(hWnd, TIMER_ID, _timerTime, (TIMERPROC)NULL);
             }
         }
         break;
+
         case DBT_DEVICEREMOVECOMPLETE:
         {
-            Beep(523, 500); //
-            //printf("Device Remove\n");
-            if(_callback)
+            if (_callback_dcd)
             {
-                _callback(device_event_disconnect,"Device DisConnected");
+                _callback_dcd(device_event_disconnect, "Device DisConnected");
+            }
+            if(_timerTime)
+            {
+                KillTimer(hWnd, TIMER_ID);
             }
         }
         break;
+
         case DBT_DEVNODES_CHANGED:
             break;
         default:
@@ -107,6 +117,22 @@ INT_PTR WINAPI WinProcCallback(
         UnregisterDeviceNotification(hDeviceNotify);
         DestroyWindow(hWnd);
         break;
+
+    case WM_TIMER:
+        switch (wParam)
+        {
+        case TIMER_ID:
+            // process the 10-second timer
+            KillTimer(hWnd, TIMER_ID);
+            if (_callback_dcd)
+            {
+                _callback_dcd(device_event_connect, "Device Connected");
+            }
+
+            return 0;
+        }
+        break;
+
     default:
         lRet = DefWindowProc(hWnd, message, wParam, lParam);
         break;
@@ -134,16 +160,16 @@ BOOL createHiddenWindow(HINSTANCE hInstanceExe)
     return FALSE;
 }
 
-
-void DeviceConnectDisconnect_win::assign_callback(CallbackAfterDeviceChange p_callback)
+void DeviceConnectDisconnect_win::assign_callback(CallbackAfterDeviceChange p_callback, int timer)
 {
-    _callback = p_callback;
+    _timerTime = timer;
+    _callback_dcd = p_callback;
 };
 
 // https://gist.github.com/vincenthsu/8fab51834e3a04074a57
 GUID StringToGuid(const std::string &str)
 {
-    GUID guid;
+    GUID guid{0};
     sscanf(str.c_str(),
            "{%8x-%4hx-%4hx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx}",
            &guid.Data1, &guid.Data2, &guid.Data3,
@@ -155,13 +181,11 @@ GUID StringToGuid(const std::string &str)
 
 void DeviceConnectDisconnect_win::assign_filter(device_filter filter)
 {
-
     GUID_HARDWARE = StringToGuid(filter.str1);
-
-#ifdef REPLACE_DEVCLASS_USB
+#ifdef REPLACE_GUID_HARDWARE
+    printf("%s",REPLACE_GUID_HARDWARE);
     GUID_HARDWARE = GUID_DEVCLASS_USB;
 #endif
-    
 };
 
 void messageReceiver(HWND hWnd)
@@ -171,10 +195,8 @@ void messageReceiver(HWND hWnd)
 
     while ((retVal = GetMessage(&msg, NULL, 0, 0)) != 0)
     {
-        printf("messageReceiver\n");
         if (retVal == -1)
         {
-            // ErrorHandler(L"GetMessage");
             break;
         }
         else
@@ -193,7 +215,7 @@ void Execute()
 
     notificationFilter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
     notificationFilter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-    notificationFilter.dbcc_classguid = GUID_DEVCLASS_USB;
+    notificationFilter.dbcc_classguid = GUID_HARDWARE;
 
     devNotify =
         RegisterDeviceNotification(GetConsoleWindow(),
@@ -206,7 +228,7 @@ void Execute()
             WS_EX_CLIENTEDGE | WS_EX_APPWINDOW,
             WindowClassEx.lpszClassName,
             NULL,
-            WS_OVERLAPPEDWINDOW, // style
+            WS_OVERLAPPEDWINDOW, 
             CW_USEDEFAULT, 0,
             0, 0,
             NULL, NULL,
@@ -214,10 +236,8 @@ void Execute()
             NULL);
 
         ShowWindow(hWnd, SW_HIDE);
-
         messageReceiver(hWnd);
     }
-    printf("Execute -> End\n");
 };
 
 void DeviceConnectDisconnect_win::start()
